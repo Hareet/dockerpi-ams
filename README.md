@@ -1,5 +1,8 @@
 # Docker Pi - AMS
-![Automated Media Server via Docker on Raspberry Pi](https://github.com/Hareet/dockerpi-ams/blob/880e3b71fda576a729a2811e54bb8d9389f7f04e/ams.jpg)
+<p align="center">
+    <img src="https://github.com/Hareet/dockerpi-ams/blob/master/ams.jpg">
+</p>
+An Automated Media Server via Docker on Rapsberry Pi.
 
 ### Scenario
 
