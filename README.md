@@ -1,5 +1,5 @@
 # Docker Pi - AMS
-Automated Media Server via Docker on Raspberry Pi
+![Automated Media Server via Docker on Raspberry Pi](https://github.com/Hareet/dockerpi-ams/blob/880e3b71fda576a729a2811e54bb8d9389f7f04e/ams.jpg)
 
 ### Scenario
 
@@ -31,21 +31,22 @@ You're in a conversation with a friend, and he mentions something new to watch. 
 
 ## Method
 
-### Setup MicroSD and External Storage
+#### Setup MicroSD and External Storage
 
 - Install Hypriot Flash tool
     - [flash](https://github.com/hypriot/flash)
 - Change the contents of the cloud_config.yaml found in this directory with the following attributes:
     - users.name, users.plain_text_password
     - write_files.content.ssid, write_files.content.psk (password)
-    - *Note* This will enable your RPI to automatically connect to your WiFi upon boot. You will be able to ssh from there.
+    - *Note*: This will enable your RPI to automatically connect to your WiFi upon boot. You will be able to ssh from there.
 - Open a terminal
-    - Discover the mount point of your SD card. In OSX, run: `diskutil -l`
-    - *Note* Replace the value after the -d parameter below with your own. There is a potential to flash one of your hard disks if you are not correct.
+    - Discover the mount point of your SD card. In OSX, run: 
+    - `diskutil -l`
+    - *Note*: Replace the value after the -d parameter below with your own. There is a potential to flash one of your hard disks if you are not correct.
     - `flash -d /dev/disk3 --userdata cloud_config.yaml https://github.com/hypriot/image-builder-rpi/releases/download/v1.11.1/hypriotos-rpi-v1.11.1.img.zip`
 - Insert SD card into Pi and boot up.
 - Check ssh:
-    `ssh ams@dockerpi.local`
+    - `ssh ams@dockerpi.local`
 
 - Mount External Storage:
     - `lsblk` to list where all devices are
@@ -96,7 +97,7 @@ $ docker create \
         - script-call-after: "/config/transmission/transmission-postprocess.sh"
         - rpc-host-whitelist:"t.dnsname.com"
 
-### Jackett Setup
+#### Jackett Setup
 ```
 $ docker create \
     --name=jackett \
@@ -111,11 +112,23 @@ $ docker create \
     linuxserver/jackett
 ```
 
-### Radarr Setup
+#### Radarr Setup
 ```
 $ docker create \
     --name=radarr \
+    --network=rpi \
+    -e PUID=1000 \
+    -e PGID=1000 \
+    -e TZ=Denver/America \
+    -p 7878:7878 \
+    -v /srv/plexMediaServer/config/radarr:/config \
+    -v /srv/plexMediaServer/Movies:/movies \
+    -v /srv/plexMediaServer/Downloads:/downloads \
+    restart unless-stopped \
+    linuxserver/darr
 ```
+
+Detailed instructions and rest of container setup to come.
 
 
 

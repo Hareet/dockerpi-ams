@@ -1,0 +1,66 @@
+FROM raspbian/jessie:latest
+
+RUN apt-get update
+RUN apt-get install -y oracle-java8-jdk wget build-essential
+
+# install shell2http
+RUN wget --directory-prefix=/srv https://dl.google.com/go/go1.11.1.linux-armv6l.tar.gz
+RUN tar -C /usr/local -xvzf /srv/go1.11.1.linux-armv6l.tar.gz
+RUN mkdir -p ~/go
+RUN echo 'export GOPATH=$HOME/go\n\
+    export PATH=/usr/local/go/bin:$PATH:$GOPATH/bin\n'\
+    >> ~/.bashrc
+
+RUN apt-get install -y git
+RUN /bin/bash -c "source ~/.bashrc"
+RUN /usr/local/go/bin/go get -u github.com/msoap/shell2http
+RUN mkdir -p /app
+RUN cp /root/go/bin/shell2http /app/shell2http
+#RUN /usr/local/go/bin/go /app/shell2http -version
+RUN /bin/bash -c "/root/go/bin/shell2http -version"
+
+RUN wget --directory-prefix=/srv https://get.filebot.net/filebot/FileBot_4.8.5/FileBot_4.8.5-portable.tar.xz
+WORKDIR ["/srv"]
+RUN tar -C /srv -xvJf /srv/FileBot_4.8.5-portable.tar.xz
+RUN ls /srv
+RUN ln -s /srv/filebot.sh /usr/bin/filebot
+
+RUN apt-get update && apt-get install -y \
+    mediainfo \
+    libchromaprint-tools \
+    file \
+    curl \
+    inotify-tools
+
+ENV DOCKER_DATA /data
+WORKDIR $DOCKER_DATA
+ENV HOME $DOCKER_DATA
+ENV JAVA_OPTS "-DuseGVFS=false -Djava.net.useSystemProxies=false -Dapplication.deployment=docker -Dapplication.dir=$DOCKER_DATA -Duser.home=$DOCKER_DATA -Djava.io.tmpdir=$DOCKER_DATA/tmp -Djava.util.prefs.PreferencesFactory=net.filebot.util.prefs.FilePreferencesFactory -Dnet.filebot.util.prefs.file=$DOCKER_DATA/prefs.properties"
+
+# install s6 overlay
+ARG OVERLAY_VERSION="v1.22.0.0"
+ARG OVERLAY_ARCH="armhf"
+
+RUN \
+  curl -o \
+  /tmp/s6-overlay.tar.gz -L \
+    "https://github.com/just-containers/s6-overlay/releases/download/${OVERLAY_VERSION}/s6-overlay-${OVERLAY_ARCH}.tar.gz" && \
+  tar xfz \
+    /tmp/s6-overlay.tar.gz -C / && \
+  echo "**** create abc user and make our folders ****" && \
+  useradd -u 911 -U -d /config -s /bin/false abc && \
+  usermod -G users abc && \
+  mkdir -p \
+  /app \
+  /config \
+  /defaults
+
+RUN \
+  filebot -script fn:sysinfo && \
+  mkdir -p ${DOCKER_DATA}/.filebot && \
+  ln -s ${DOCKER_DATA}/cache/ ${DOCKER_DATA}/.filebot/ && \
+  ls -lah ${DOCKER_DATA}
+
+COPY root/ /
+RUN chmod -R 777 /root/go/
+ENTRYPOINT ["/init"]
